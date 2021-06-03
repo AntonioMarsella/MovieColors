@@ -52,4 +52,4 @@ def split_cut(filename, n, by='size'):
         output.append(output_path)
     return output
 
-split_cut("./video/vid1.mp4",50)
+split_cut("./data/pink.mp4",2, by="count")
