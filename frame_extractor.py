@@ -16,7 +16,7 @@ def extract_frames(video_path, frames_dir, overwrite=False, start=-1, end=-1, ev
     :param every: frame spacing
     :return: count of images saved
     """
-
+    X = []
     video_path = os.path.normpath(video_path)  # make the paths OS (Windows) compatible
     frames_dir = os.path.normpath(frames_dir)  # make the paths OS (Windows) compatible
 
@@ -50,27 +50,11 @@ def extract_frames(video_path, frames_dir, overwrite=False, start=-1, end=-1, ev
     else:  # this is faster for every <25 and consumes small memory
         for index in range(start, end):  # lets loop through the frames until the end
             frame = vr[index]  # read an image from the capture
-            print(frame.asnumpy().shape)
-            img = frame.asnumpy()
-            pixels = np.float32(img.reshape(-1, 3))
-
-            n_colors = 5
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, .1)
-            flags = cv2.KMEANS_RANDOM_CENTERS
-
-            _, labels, palette = cv2.kmeans(pixels, n_colors, None, criteria, 10, flags)
-            _, counts = np.unique(labels, return_counts=True)
-            dominant = palette[np.argmax(counts)]
-            indices = np.argsort(counts)[::-1]   
-            freqs = np.cumsum(np.hstack([[0], counts[indices]/float(counts.sum())]))
-            rows = np.int_(img.shape[0]*freqs)
-
-            dom_patch = np.zeros(shape=img.shape, dtype=np.uint8)
-            for i in range(len(rows) - 1):
-                dom_patch[rows[i]:rows[i + 1], :, :] += np.uint8(palette[indices[i]])
-            print(dom_patch.shape)
-            plt.imshow(dom_patch.astype(np.int8))
             
+            # dom_patch[]
+            # for i in range(len(rows) - 1):
+            #    dom_patch[rows[i]:rows[i + 1], :, :] += np.uint8(palette[indices[i]])
+           
             # image = Image.fromarray(frame.asnumpy())
             # image.show()
             if index % every == 0:  # if this is a frame we want to write out based on the 'every' argument
@@ -78,7 +62,28 @@ def extract_frames(video_path, frames_dir, overwrite=False, start=-1, end=-1, ev
                 if not os.path.exists(save_path) or overwrite:  # if it doesn't exist or we want to overwrite anyways
                     cv2.imwrite(save_path, cv2.cvtColor(frame.asnumpy(), cv2.COLOR_RGB2BGR))  # save the extracted image
                     saved_count += 1  # increment our counter by one
+                print(frame.asnumpy().shape)
+                img = frame.asnumpy()
+                pixels = np.float32(img.reshape(-1, 3))
 
+                n_colors = 1
+                criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, .1)
+                flags = cv2.KMEANS_RANDOM_CENTERS
+
+                _, labels, palette = cv2.kmeans(pixels, n_colors, None, criteria, 10, flags)
+                _, counts = np.unique(labels, return_counts=True)
+                dominant = palette[np.argmax(counts)]
+                indices = np.argsort(counts)[::-1]   
+                freqs = np.cumsum(np.hstack([[0], counts[indices]/float(counts.sum())]))
+                rows = np.int_(img.shape[0]*freqs)
+
+                dom_patch = np.zeros(shape=(10, 500, 3), dtype=np.uint8)
+                dom_patch[:, :, :] = np.uint8(palette[indices[0]])
+                X.append(dom_patch)
+    x = np.array(X)
+    x = np.array(np.array(X).reshape((x.shape[0]*x.shape[1], x.shape[2], x.shape[3])))
+    img = Image.fromarray(x)
+    img.show()
     return saved_count  # and return the count of the images we saved
 
 
